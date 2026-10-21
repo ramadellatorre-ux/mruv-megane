@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C8102E">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>El Mégane en MRUV</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -95,7 +96,7 @@ label.inline{display:flex;gap:8px;align-items:center;font-size:.9rem;color:var(-
 .two{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:start}
 @media (max-width:820px){.two{grid-template-columns:1fr}}
 ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px;counter-reset:s}
-ol.steps li{display:grid;grid-template-columns:32px 1fr;gap:12px;counter-increment:s}
+ol.steps li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;counter-increment:s}
 ol.steps li::before{content:counter(s);font-family:var(--display);font-weight:700;font-size:1.1rem;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--red);color:var(--red)}
 .eq{font-family:var(--mono);font-size:.95rem;background:var(--bg);border-radius:6px;padding:8px 10px;margin-top:6px;overflow-x:auto;white-space:nowrap}
 .eq b{color:var(--red)}
@@ -114,6 +115,42 @@ ol.steps li::before{content:counter(s);font-family:var(--display);font-weight:70
 .real div{border-left:3px solid var(--lane);padding-left:12px}
 footer{font-size:.85rem;color:var(--muted)}
 footer a{color:inherit}
+/* Táctil y celular */
+button{min-height:44px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+select,input{font-size:16px}
+input[type=range]{height:32px;touch-action:pan-y}
+button.snd[aria-pressed="true"]{border-color:var(--red);color:var(--red)}
+.msnd .mute{display:none}
+.msnd[aria-pressed="false"] .mute{display:inline}
+.msnd[aria-pressed="false"] .waves{display:none}
+.mbar{display:none}
+@media (max-width:820px){
+  .wrap{gap:20px;padding-block:18px 110px}
+  header .lead{font-size:.95rem}
+  .ficha{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ficha div{padding:10px 12px}
+  .ficha dd{font-size:.92rem}
+  .panel{padding:12px}
+  .map svg{max-height:60vh}
+  .controls .row #play,.controls .row #sound{display:none}
+  .mbar{display:grid;position:fixed;left:0;right:0;bottom:0;z-index:20;grid-template-columns:52px minmax(0,1fr) 52px;gap:10px;align-items:center;
+    background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(0,0,0,.14);
+    padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
+    padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .mread{display:grid;gap:0;min-width:0}
+  .mread b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mbar button{width:52px;height:52px;padding:0;min-width:0;display:grid;place-items:center;font-size:1.15rem}
+  ol.steps li{grid-template-columns:28px minmax(0,1fr);gap:10px}
+  ol.steps li::before{width:28px;height:28px;font-size:1rem}
+  .eq{font-size:.85rem;white-space:normal;overflow-wrap:anywhere}
+  .q .row input{flex:1;width:auto}
+}
+@media (max-width:420px){
+  .clock{font-size:2rem}
+  .gauge svg{width:160px}
+  .readout b{font-size:1rem}
+  h2{font-size:1.5rem}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -172,6 +209,7 @@ footer a{color:inherit}
         <div class="row">
           <button class="primary" id="play">▶ Arrancar</button>
           <button id="reset">Volver a 21:30</button>
+          <button id="sound" class="snd" aria-pressed="true">Sonido: sí</button>
           <label class="inline" for="speed">Simulación
             <select id="speed">
               <option value="30">×30 (1 min)</option>
@@ -240,6 +278,17 @@ footer a{color:inherit}
     <div class="real" id="real"></div>
   </section>
 
+  <div class="mbar" aria-label="Controles rápidos">
+    <button class="primary" id="mPlay" aria-label="Arrancar">▶</button>
+    <div class="mread">
+      <b id="mRead">21:30:00 · 0,0 km/h</b>
+      <input type="range" id="mScrub" min="0" max="1000" value="0" aria-label="Línea de tiempo">
+    </div>
+    <button class="msnd snd" id="mSound" aria-pressed="true" aria-label="Sonido del motor">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="waves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="mute" d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
   <footer>Recorrido calculado sobre calles reales con OpenStreetMap/OSRM: Manuela Pedraza → Aizpúrua → Cullen → Av. de los Constituyentes → Pedro Morán (≈ 2,96 km). En el modelo MRUV el trayecto se trata como una línea recta de esa longitud. Los datos del Mégane son aproximados.</footer>
 </div>
 
@@ -283,7 +332,7 @@ function buildMap(){
   const lat0=-34.58, k=Math.cos(lat0*Math.PI/180);
   const pts=ROUTE.map(([lo,la])=>[(lo+58.5)*111320*k,-(la-lat0)*110574]);
   const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]);
-  const pad=230, minX=Math.min(...xs)-pad-160, minY=Math.min(...ys)-pad, W=Math.max(...xs)-minX+pad+160, H=Math.max(...ys)-minY+pad;
+  const pad=230, minX=Math.min(...xs)-pad-60, minY=Math.min(...ys)-pad, W=Math.max(...xs)-minX+pad+420, H=Math.max(...ys)-minY+pad;
   map.setAttribute("viewBox",`${minX} ${minY} ${W} ${H}`);
   // grilla de cuadras (~100 m)
   const g=el("g",{stroke:"var(--line)","stroke-width":2},map);
@@ -299,19 +348,19 @@ function buildMap(){
     const A=pts[s.a],B=pts[s.b];const mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2;
     let ang=Math.atan2(B[1]-A[1],B[0]-A[0])*180/Math.PI; if(ang>90)ang-=180; if(ang<-90)ang+=180;
     const len=Math.hypot(B[0]-A[0],B[1]-A[1]);
-    const nx=-(B[1]-A[1])/len, ny=(B[0]-A[0])/len, off=s.side*70;
-    const tx=el("text",{x:mx+nx*off,y:my+ny*off,"text-anchor":"middle","dominant-baseline":"middle",transform:`rotate(${ang.toFixed(1)} ${mx+nx*off} ${my+ny*off})`,fill:"var(--muted)","font-family":"Barlow Condensed, Arial Narrow, sans-serif","font-size":len<200?44:56,"font-weight":600},map);
+    const nx=-(B[1]-A[1])/len, ny=(B[0]-A[0])/len, off=s.side*80;
+    const tx=el("text",{x:mx+nx*off,y:my+ny*off,"text-anchor":"middle","dominant-baseline":"middle",transform:`rotate(${ang.toFixed(1)} ${mx+nx*off} ${my+ny*off})`,fill:"var(--muted)","font-family":"Barlow Condensed, Arial Narrow, sans-serif","font-size":len<200?58:74,"font-weight":600},map);
     tx.textContent=s.name;
   });
   // puntos A y B
   const pin=(p,label,sub,dx,anchor)=>{
-    el("circle",{cx:p[0],cy:p[1],r:34,fill:"var(--surface)",stroke:"var(--ink)","stroke-width":8},map);
-    const t1=el("text",{x:p[0],y:p[1]+2,"text-anchor":"middle","dominant-baseline":"middle","font-family":"Barlow Condensed, sans-serif","font-weight":700,"font-size":44,fill:"var(--ink)"},map);t1.textContent=label;
-    const t2=el("text",{x:p[0]+dx,y:p[1]-6,"text-anchor":anchor,"font-family":"Barlow Condensed, sans-serif","font-weight":700,"font-size":54,fill:"var(--ink)"},map);t2.textContent=sub[0];
-    const t3=el("text",{x:p[0]+dx,y:p[1]+50,"text-anchor":anchor,"font-family":"Barlow, sans-serif","font-size":42,fill:"var(--muted)"},map);t3.textContent=sub[1];
+    el("circle",{cx:p[0],cy:p[1],r:42,fill:"var(--surface)",stroke:"var(--ink)","stroke-width":8},map);
+    const t1=el("text",{x:p[0],y:p[1]+2,"text-anchor":"middle","dominant-baseline":"middle","font-family":"Barlow Condensed, sans-serif","font-weight":700,"font-size":54,fill:"var(--ink)"},map);t1.textContent=label;
+    const t2=el("text",{x:p[0]+dx,y:p[1]-8,"text-anchor":anchor,"font-family":"Barlow Condensed, sans-serif","font-weight":700,"font-size":74,fill:"var(--ink)"},map);t2.textContent=sub[0];
+    const t3=el("text",{x:p[0]+dx,y:p[1]+64,"text-anchor":anchor,"font-family":"Barlow, sans-serif","font-size":56,fill:"var(--muted)"},map);t3.textContent=sub[1];
   };
-  pin(pts[0],"A",["Salida","M. Pedraza 6080"],60,"start");
-  pin(pts[pts.length-1],"B",["Garden Club","P. Morán 2379"],60,"start");
+  pin(pts[0],"A",["Salida","M. Pedraza 6080"],64,"start");
+  pin(pts[pts.length-1],"B",["Garden Club","P. Morán 2379"],64,"start");
   // brújula
   const cx=minX+W-90, cy=minY+100;
   el("path",{d:`M${cx} ${cy-50} L${cx+22} ${cy+20} L${cx} ${cy+8} L${cx-22} ${cy+20} Z`,fill:"var(--ink)"},map);
@@ -320,7 +369,7 @@ function buildMap(){
   const sx=minX+60, sy=minY+H-60;
   el("rect",{x:sx,y:sy-10,width:500,height:20,fill:"var(--ink)"},map);
   el("rect",{x:sx+250,y:sy-6,width:246,height:12,fill:"var(--surface)"},map);
-  const sc=el("text",{x:sx,y:sy-26,"font-family":"JetBrains Mono, monospace","font-size":38,fill:"var(--muted)"},map);sc.textContent="500 m";
+  const sc=el("text",{x:sx,y:sy-26,"font-family":"JetBrains Mono, monospace","font-size":48,fill:"var(--muted)"},map);sc.textContent="500 m";
   // auto visto desde arriba
   car=el("g",{},map);
   el("rect",{x:-48,y:-24,width:96,height:48,rx:18,fill:"var(--red)",stroke:"var(--surface)","stroke-width":6},car);
@@ -353,10 +402,10 @@ function niceStep(range){const raw=range/4, p=Math.pow(10,Math.floor(Math.log10(
 const charts={};
 function buildChart(id,fn,unit,color){
   const svg=$(id); svg.innerHTML="";
-  const L=52,R=12,T=14,B=34,W=320-L-R,H=200-T-B;
+  const L=52,R=12,T=26,B=34,W=320-L-R,H=200-T-B;
   let lo=0,hi=0; for(let i=0;i<=60;i++){const y=fn(M.T*i/60);lo=Math.min(lo,y);hi=Math.max(hi,y)}
   if(hi-lo<1e-12){hi=lo+1}
-  const st=niceStep(hi-lo); lo=Math.floor(lo/st-1e-9)*st; hi=Math.ceil(hi/st-1e-9)*st; if(hi===lo)hi=lo+st;
+  const st=niceStep(hi-lo); lo=Math.floor(lo/st+1e-9)*st; hi=Math.ceil(hi/st-1e-9)*st; if(hi===lo)hi=lo+st;
   const sx=s=>L+W*s/M.T, sy=y=>T+H*(1-(y-lo)/(hi-lo));
   const grid=el("g",{},svg);
   const dec=Math.max(0,-Math.floor(Math.log10(st)));
@@ -371,7 +420,7 @@ function buildChart(id,fn,unit,color){
     const tx=el("text",{x,y:T+H+16,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","font-size":10,fill:"var(--muted)"},grid);tx.textContent=fmt(m,mst<1?1:0);
   }
   const ax=el("text",{x:L+W,y:200-4,"text-anchor":"end","font-family":"Barlow, sans-serif","font-size":11,fill:"var(--muted)"},svg);ax.textContent="t (min)";
-  const ay=el("text",{x:4,y:T+2,"font-family":"Barlow, sans-serif","font-size":11,fill:"var(--muted)","dominant-baseline":"hanging"},svg);ay.textContent=unit;
+  const ay=el("text",{x:4,y:4,"font-family":"Barlow, sans-serif","font-size":11,fill:"var(--muted)","dominant-baseline":"hanging"},svg);ay.textContent=unit;
   el("line",{x1:L,x2:L+W,y1:sy(Math.max(lo,Math.min(hi,0))),y2:sy(Math.max(lo,Math.min(hi,0))),stroke:"var(--muted)","stroke-width":1},svg);
   let d="",area=`M${sx(0)} ${sy(Math.max(lo,0))}`;
   for(let i=0;i<=120;i++){const s=M.T*i/120;d+=(i?"L":"M")+sx(s).toFixed(1)+" "+sy(fn(s)).toFixed(1);area+=` L${sx(s).toFixed(1)} ${sy(fn(s)).toFixed(1)}`}
@@ -395,7 +444,7 @@ function render(){
   done.setAttribute("stroke-dasharray",`${L} ${pathLen+10}`);
   const p=path.getPointAtLength(L), q=path.getPointAtLength(Math.min(pathLen,L+4)), q0=path.getPointAtLength(Math.max(0,L-4));
   const ang=Math.atan2(q.y-q0.y,q.x-q0.x)*180/Math.PI;
-  car.setAttribute("transform",`translate(${p.x} ${p.y}) rotate(${ang})`);
+  car.setAttribute("transform",`translate(${p.x} ${p.y}) rotate(${ang}) scale(1.35)`);
   $("clock").textContent=clockStr(toSec(P.t0)+t);
   $("progress").textContent=`${fmt(frac*100,1)} % del recorrido`;
   $("rT").textContent=`${fmt(t,0)} s`; $("rTmin").textContent=`${fmt(t/60,1)} min`;
@@ -404,7 +453,8 @@ function render(){
   $("gV").textContent=fmt(v*3.6,1);
   needle.setAttribute("transform",`rotate(${needle._ang(v*3.6)} 100 100)`);
   for(const id in charts){const c=charts[id], y=c.fn(t);c.cur.setAttribute("x1",c.sx(t));c.cur.setAttribute("x2",c.sx(t));c.dot.setAttribute("cx",c.sx(t));c.dot.setAttribute("cy",c.sy(y))}
-  $("scrub").value=Math.round(t/M.T*1000);
+  $("scrub").value=$("mScrub").value=Math.round(t/M.T*1000);
+  $("mRead").textContent=`${clockStr(toSec(P.t0)+t)} · ${fmt(v*3.6,1)} km/h`;
 }
 
 /* ---------- Resolución y textos ---------- */
@@ -468,20 +518,114 @@ function check(n){
   }
 }
 
+/* ---------- Motor (Web Audio, 4 cilindros sintetizado) ---------- */
+const Engine={
+  ctx:null,on:true,hot:false,
+  init(){
+    if(this.ctx)return true;
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return false;
+    const c=this.ctx=new AC();
+    this.out=c.createGain(); this.out.gain.value=0; this.out.connect(c.destination);
+    this.lp=c.createBiquadFilter(); this.lp.type="lowpass"; this.lp.frequency.value=420; this.lp.Q.value=3; this.lp.connect(this.out);
+    // explosiones: diente de sierra + sub irregular
+    this.o1=c.createOscillator(); this.o1.type="sawtooth";
+    this.o2=c.createOscillator(); this.o2.type="square";
+    const g1=c.createGain(), g2=c.createGain(); g1.gain.value=.55; g2.gain.value=.22;
+    this.o1.connect(g1); g1.connect(this.lp); this.o2.connect(g2); g2.connect(this.lp);
+    // ruido de admisión/escape
+    const buf=c.createBuffer(1,c.sampleRate*2,c.sampleRate), ch=buf.getChannelData(0);
+    for(let i=0;i<ch.length;i++)ch[i]=Math.random()*2-1;
+    this.noise=c.createBufferSource(); this.noise.buffer=buf; this.noise.loop=true;
+    this.bp=c.createBiquadFilter(); this.bp.type="bandpass"; this.bp.frequency.value=180; this.bp.Q.value=1.2;
+    const gn=c.createGain(); gn.gain.value=.18;
+    this.noise.connect(this.bp); this.bp.connect(gn); gn.connect(this.lp);
+    this.o1.start(); this.o2.start(); this.noise.start();
+    this.setRpm(850,true);
+    return true;
+  },
+  setRpm(rpm,now){
+    if(!this.ctx)return;
+    const f=rpm/60*2, at=this.ctx.currentTime, k=now?0.001:0.12;
+    this.o1.frequency.setTargetAtTime(f,at,k);
+    this.o2.frequency.setTargetAtTime(f*0.5,at,k);
+    this.lp.frequency.setTargetAtTime(300+rpm*0.14,at,k);
+    this.bp.frequency.setTargetAtTime(120+rpm*0.06,at,k);
+  },
+  // motor de arranque + el motor que "agarra"; devuelve ms hasta que el auto puede salir
+  start(){
+    if(!this.on||!this.init())return 0;
+    const c=this.ctx; if(c.state==="suspended")c.resume();
+    const at=c.currentTime;
+    this.out.gain.cancelScheduledValues(at);
+    if(this.hot){this.out.gain.setTargetAtTime(.32,at,.08);return 0}
+    this.hot=true;
+    const st=c.createOscillator(); st.type="sawtooth"; st.frequency.value=110;
+    const sg=c.createGain(); sg.gain.value=0;
+    const lfo=c.createOscillator(); lfo.type="square"; lfo.frequency.value=8;
+    const lg=c.createGain(); lg.gain.value=.12; lfo.connect(lg); lg.connect(sg.gain);
+    const sf=c.createBiquadFilter(); sf.type="lowpass"; sf.frequency.value=900;
+    st.connect(sg); sg.connect(sf); sf.connect(c.destination);
+    sg.gain.setValueAtTime(0,at); sg.gain.linearRampToValueAtTime(.16,at+.05);
+    sg.gain.setValueAtTime(.16,at+.75); sg.gain.linearRampToValueAtTime(0,at+.85);
+    st.start(at); lfo.start(at); st.stop(at+.9); lfo.stop(at+.9);
+    // arranca: acelerón y vuelve a ralentí
+    this.out.gain.setValueAtTime(0,at+.7); this.out.gain.linearRampToValueAtTime(.38,at+.85); this.out.gain.setTargetAtTime(.3,at+1.2,.3);
+    this.o1.frequency.setValueAtTime(30,at+.7); this.o1.frequency.linearRampToValueAtTime(70,at+.95); this.o1.frequency.setTargetAtTime(28,at+1,.25);
+    this.o2.frequency.setValueAtTime(15,at+.7); this.o2.frequency.linearRampToValueAtTime(35,at+.95); this.o2.frequency.setTargetAtTime(14,at+1,.25);
+    return 1300;
+  },
+  stop(off){
+    if(!this.ctx)return;
+    const at=this.ctx.currentTime;
+    this.out.gain.cancelScheduledValues(at);
+    this.out.gain.setTargetAtTime(0,at,off?.25:.1);
+    if(off){this.hot=false;this.setRpm(500)}
+  }
+};
+// rpm según velocidad, con cambios (km/h cada 1000 rpm, aprox.)
+const GEARS=[7.5,13.5,20,27,34];
+function rpmFor(kmh){
+  if(kmh<2)return 850;
+  let r=0; for(const g of GEARS){r=kmh/g*1000; if(r<3200)break}
+  return Math.max(900,Math.min(6200,r));
+}
+
 /* ---------- Animación ---------- */
-const playBtn=$("play");
-function setPlaying(p){playing=p;playBtn.textContent=p?"❚❚ Pausa":(t>=M.T?"↻ De nuevo":"▶ "+(t>0?"Seguir":"Arrancar"));if(p){last=performance.now();requestAnimationFrame(loop)}}
+const playBtn=$("play"), mPlay=$("mPlay");
+let holdUntil=0;
+function syncPlay(){
+  const label=playing?"❚❚ Pausa":(t>=M.T?"↻ De nuevo":"▶ "+(t>0?"Seguir":"Arrancar"));
+  playBtn.textContent=label;
+  mPlay.textContent=playing?"❚❚":(t>=M.T?"↻":"▶");
+  mPlay.setAttribute("aria-label",label.slice(2));
+}
+function setPlaying(p){
+  playing=p;
+  if(p){holdUntil=performance.now()+Engine.start();last=performance.now();requestAnimationFrame(loop)}
+  else Engine.stop(t>=M.T);
+  syncPlay();
+}
 function loop(now){
   if(!playing)return;
   const dt=(now-last)/1000; last=now;
-  t=Math.min(M.T,t+dt*Number($("speed").value)*(M.T/1800));
+  if(now>=holdUntil){t=Math.min(M.T,t+dt*Number($("speed").value)*(M.T/1800));Engine.setRpm(rpmFor(vAt(t)*3.6))}
   render();
   if(t>=M.T){setPlaying(false);return}
   requestAnimationFrame(loop);
 }
-playBtn.addEventListener("click",()=>{if(!playing&&t>=M.T)t=0;setPlaying(!playing)});
+const toggle=()=>{if(!playing&&t>=M.T)t=0;setPlaying(!playing)};
+playBtn.addEventListener("click",toggle); mPlay.addEventListener("click",toggle);
 $("reset").addEventListener("click",()=>{t=0;render();setPlaying(false)});
-$("scrub").addEventListener("input",e=>{t=M.T*e.target.value/1000;render();if(playing)setPlaying(false);else playBtn.textContent=t>=M.T?"↻ De nuevo":"▶ "+(t>0?"Seguir":"Arrancar")});
+const onScrub=e=>{t=M.T*e.target.value/1000;render();if(playing)setPlaying(false);else syncPlay()};
+$("scrub").addEventListener("input",onScrub); $("mScrub").addEventListener("input",onScrub);
+const sndBtns=document.querySelectorAll(".snd");
+sndBtns.forEach(b=>b.addEventListener("click",()=>{
+  Engine.on=!Engine.on;
+  sndBtns.forEach(x=>x.setAttribute("aria-pressed",Engine.on));
+  $("sound").textContent="Sonido: "+(Engine.on?"sí":"no");
+  if(!Engine.on)Engine.stop(true); else if(playing)Engine.start();
+}));
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&playing)setPlaying(false)});
 document.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click",()=>check(+b.dataset.q)));
 ["q1","q2","q3"].forEach((id,i)=>$(id).addEventListener("keydown",e=>{if(e.key==="Enter")check(i+1)}));
 

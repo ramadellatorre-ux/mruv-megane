@@ -5,6 +5,8 @@ Ejercicio interactivo de Movimiento Rectilíneo Uniformemente Variado: un Renaul
 - Recorrido real: ≈ 2.960 m (OpenStreetMap / OSRM)
 - a ≈ 0,00183 m/s² · v final ≈ 11,8 km/h · v media ≈ 5,9 km/h
 
-Incluye mapa animado, velocímetro, gráficos x(t), v(t), a(t), resolución paso a paso, preguntas de práctica y un laboratorio para cambiar los datos.
+Incluye mapa animado, velocímetro, sonido de motor (Web Audio), gráficos x(t), v(t), a(t), resolución paso a paso, preguntas de práctica y un laboratorio para cambiar los datos.
 
 Es un único archivo: abrí `index.html` en el navegador.
+
+Pensado para celular: barra de control fija abajo, botones grandes y ecuaciones que pasan de renglón.
