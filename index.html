@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>El Mégane en MRUV</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: tablero de auto — enunciado arriba, mapa + instrumentos lado a lado, gráficos y resolución debajo */
+:root{
+  --bg:#ECEFF1; --surface:#F8F9FA; --ink:#1B2126; --muted:#5C666F; --line:#CDD3D8;
+  --red:#C8102E; --red-soft:rgba(200,16,46,.12); --road:#B6BEC5; --lane:#D9A400;
+  --ok:#2E7D4F; --warn:#B45309;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121518; --surface:#1A1F23; --ink:#E6EAED; --muted:#98A2AB; --line:#2C343A;
+  --red:#F0425C; --red-soft:rgba(240,66,92,.16); --road:#3A434A; --lane:#E8B931;
+  --ok:#5CC48A; --warn:#F59E0B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121518; --surface:#1A1F23; --ink:#E6EAED; --muted:#98A2AB; --line:#2C343A;
+  --red:#F0425C; --red-soft:rgba(240,66,92,.16); --road:#3A434A; --lane:#E8B931;
+  --ok:#5CC48A; --warn:#F59E0B; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1120px;margin:0 auto;padding-block:28px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;gap:28px}
+h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:clamp(2.4rem,6vw,4rem);letter-spacing:-.01em}
+h2{font-size:1.75rem}
+h3{font-size:1.2rem;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:.85rem;color:var(--red)}
+.muted{color:var(--muted)}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* Encabezado */
+header{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end}
+header .lead{max-width:60ch;margin-top:10px;color:var(--muted)}
+.car-side{width:220px;max-width:40vw}
+@media (max-width:640px){header{grid-template-columns:1fr}.car-side{display:none}}
+
+/* Ficha del enunciado */
+.ficha{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.ficha div{background:var(--surface);padding:14px 16px;display:grid;gap:2px;min-width:0}
+.ficha dt{font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;color:var(--muted)}
+.ficha dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+
+/* Escenario: mapa + tablero */
+.stage{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:820px){.stage{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.map svg{width:100%;height:auto;display:block;max-height:640px}
+.map .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.85rem;color:var(--muted);margin-top:8px}
+.map .legend a{color:var(--red)}
+
+.dash{display:grid;gap:16px}
+.gauge{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center}
+@media (max-width:420px){.gauge{grid-template-columns:1fr;justify-items:center}}
+.gauge svg{width:180px;max-width:100%;height:auto}
+.clock{font-family:var(--mono);font-size:2.4rem;font-weight:600;letter-spacing:-.02em;line-height:1}
+.readouts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.readout{border-top:2px solid var(--line);padding-top:6px;min-width:0}
+.readout span{display:block;font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-size:.75rem;color:var(--muted)}
+.readout b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1.15rem;font-weight:600}
+.readout small{font-family:var(--mono);color:var(--muted);font-size:.8rem;display:block}
+
+.controls{display:grid;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,select,input{font:inherit;color:inherit}
+button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600}
+button:hover{border-color:var(--ink)}
+button.primary{background:var(--red);border-color:var(--red);color:#fff;min-width:120px}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+select,input[type=number],input[type=time],input[type=text]{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+input[type=range]{width:100%;accent-color:var(--red)}
+label.inline{display:flex;gap:8px;align-items:center;font-size:.9rem;color:var(--muted)}
+
+/* Gráficos */
+.charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.charts{grid-template-columns:1fr}}
+.chart svg{width:100%;height:auto;display:block}
+.chart h3{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.chart h3 small{font-family:var(--mono);font-weight:400;font-size:.8rem;color:var(--muted)}
+
+/* Resolución */
+.two{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:820px){.two{grid-template-columns:1fr}}
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px;counter-reset:s}
+ol.steps li{display:grid;grid-template-columns:32px 1fr;gap:12px;counter-increment:s}
+ol.steps li::before{content:counter(s);font-family:var(--display);font-weight:700;font-size:1.1rem;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--red);color:var(--red)}
+.eq{font-family:var(--mono);font-size:.95rem;background:var(--bg);border-radius:6px;padding:8px 10px;margin-top:6px;overflow-x:auto;white-space:nowrap}
+.eq b{color:var(--red)}
+.result{border:2px solid var(--red);border-radius:10px;padding:14px 16px;background:var(--red-soft);display:grid;gap:6px}
+
+.quiz{display:grid;gap:14px}
+.q{display:grid;gap:6px}
+.q .row input{width:9rem}
+.fb{font-size:.9rem;min-height:1.4em}
+.fb.ok{color:var(--ok)} .fb.bad{color:var(--warn)}
+
+.lab{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
+.lab label{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
+.warn{color:var(--warn);font-weight:600}
+.real{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.real div{border-left:3px solid var(--lane);padding-left:12px}
+footer{font-size:.85rem;color:var(--muted)}
+footer a{color:inherit}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">Física · Movimiento rectilíneo uniformemente variado</p>
+      <h1>El Mégane en MRUV</h1>
+      <p class="lead">Un Renault Mégane rojo modelo 2000 sale de Manuela Pedraza 6080 y llega al Garden Club, en Pedro Morán 2379. Arranca desde el reposo y acelera de forma constante todo el trayecto. Dale play, mové la línea de tiempo y cambiá los datos para ver cómo responde el movimiento.</p>
+    </div>
+    <svg class="car-side" viewBox="0 0 220 90" aria-hidden="true">
+      <path d="M12 62 C12 50 20 46 34 44 L62 40 C78 24 96 18 124 18 C150 18 166 26 182 40 L200 44 C208 46 210 52 210 62 Z" fill="var(--red)"/>
+      <path d="M72 40 C84 28 98 24 120 24 L122 40 Z M128 24 C148 24 160 30 172 40 L130 40 Z" fill="var(--bg)" opacity=".85"/>
+      <rect x="10" y="60" width="202" height="6" rx="3" fill="var(--ink)" opacity=".75"/>
+      <circle cx="56" cy="66" r="15" fill="var(--ink)"/><circle cx="56" cy="66" r="6" fill="var(--road)"/>
+      <circle cx="170" cy="66" r="15" fill="var(--ink)"/><circle cx="170" cy="66" r="6" fill="var(--road)"/>
+      <line x1="0" y1="84" x2="220" y2="84" stroke="var(--line)" stroke-width="2"/>
+    </svg>
+  </header>
+
+  <dl class="ficha" aria-label="Datos del enunciado">
+    <div><dt>Partida (A)</dt><dd>Manuela Pedraza 6080, Villa Urquiza</dd></div>
+    <div><dt>Llegada (B)</dt><dd>Garden Club · Pedro Morán 2379, Agronomía</dd></div>
+    <div><dt>Vehículo</dt><dd>Renault Mégane 2000, rojo</dd></div>
+    <div><dt>Horario</dt><dd id="fHorario">21:30 → 22:00</dd></div>
+    <div><dt>Recorrido</dt><dd id="fDist">2.960 m</dd></div>
+    <div><dt>Velocidad inicial</dt><dd id="fV0">0 km/h (reposo)</dd></div>
+  </dl>
+
+  <section class="stage" aria-label="Simulación">
+    <div class="panel map">
+      <svg id="map" role="img" aria-label="Mapa del recorrido de Manuela Pedraza 6080 a Pedro Morán 2379"></svg>
+      <div class="legend">
+        <span>Norte arriba · calles reales (OpenStreetMap)</span>
+        <a href="https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=-34.57065%2C-58.50240%3B-34.58907%2C-58.49036" target="_blank" rel="noopener">Ver el recorrido en OpenStreetMap</a>
+      </div>
+    </div>
+
+    <div class="panel dash">
+      <div class="gauge">
+        <svg id="gauge" viewBox="0 0 200 170" aria-hidden="true"></svg>
+        <div style="display:grid;gap:6px;min-width:0">
+          <span class="eyebrow">Hora del viaje</span>
+          <div class="clock" id="clock">21:30:00</div>
+          <span class="muted" id="progress">0 % del recorrido</span>
+        </div>
+      </div>
+      <div class="readouts">
+        <div class="readout"><span>Tiempo t</span><b id="rT">0 s</b><small id="rTmin">0,0 min</small></div>
+        <div class="readout"><span>Posición x</span><b id="rX">0 m</b><small id="rXrest">faltan 2.960 m</small></div>
+        <div class="readout"><span>Velocidad v</span><b id="rV">0,00 m/s</b><small id="rVkmh">0,0 km/h</small></div>
+        <div class="readout"><span>Aceleración a</span><b id="rA">0,00183 m/s²</b><small>constante</small></div>
+      </div>
+      <div class="controls">
+        <div class="row">
+          <button class="primary" id="play">▶ Arrancar</button>
+          <button id="reset">Volver a 21:30</button>
+          <label class="inline" for="speed">Simulación
+            <select id="speed">
+              <option value="30">×30 (1 min)</option>
+              <option value="120" selected>×120 (15 s)</option>
+              <option value="360">×360 (5 s)</option>
+            </select>
+          </label>
+        </div>
+        <label for="scrub" class="muted" style="font-size:.85rem">Línea de tiempo (arrastrá para ir a cualquier momento)</label>
+        <input type="range" id="scrub" min="0" max="1000" value="0">
+      </div>
+    </div>
+  </section>
+
+  <section class="charts" aria-label="Gráficos del movimiento">
+    <div class="panel chart"><h3>Posición x(t) <small>parábola</small></h3><svg id="cX" viewBox="0 0 320 200"></svg></div>
+    <div class="panel chart"><h3>Velocidad v(t) <small>recta</small></h3><svg id="cV" viewBox="0 0 320 200"></svg></div>
+    <div class="panel chart"><h3>Aceleración a(t) <small>constante</small></h3><svg id="cA" viewBox="0 0 320 200"></svg></div>
+  </section>
+
+  <section class="two">
+    <div class="panel" style="display:grid;gap:16px">
+      <div><p class="eyebrow">Resolución</p><h2>Paso a paso</h2></div>
+      <ol class="steps" id="steps"></ol>
+      <div class="result" id="result"></div>
+    </div>
+
+    <div style="display:grid;gap:20px;min-width:0">
+      <div class="panel quiz">
+        <div><p class="eyebrow">Probá vos</p><h2>Antes de mirar</h2>
+          <p class="muted" style="margin-top:6px">Podés usar coma o punto decimal. Se acepta un margen de 2 %.</p></div>
+        <div class="q">
+          <label for="q1">1. ¿Cuál es la aceleración del Mégane? (m/s²)</label>
+          <div class="row"><input type="text" inputmode="decimal" id="q1" placeholder="0,00…"><button data-q="1">Comprobar</button></div>
+          <p class="fb" id="fb1" aria-live="polite"></p>
+        </div>
+        <div class="q">
+          <label for="q2">2. ¿A qué velocidad llega al Garden Club? (km/h)</label>
+          <div class="row"><input type="text" inputmode="decimal" id="q2"><button data-q="2">Comprobar</button></div>
+          <p class="fb" id="fb2" aria-live="polite"></p>
+        </div>
+        <div class="q">
+          <label for="q3" id="q3label">3. ¿Cuántos metros recorrió a las 21:45? (m)</label>
+          <div class="row"><input type="text" inputmode="decimal" id="q3"><button data-q="3">Comprobar</button></div>
+          <p class="fb" id="fb3" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="panel" style="display:grid;gap:14px">
+        <div><p class="eyebrow">Laboratorio</p><h2>Cambiá los datos</h2>
+          <p class="muted" style="margin-top:6px">Todo se recalcula: mapa, tablero, gráficos y resolución.</p></div>
+        <div class="lab">
+          <label for="inD">Distancia (m)<input type="number" id="inD" min="1" step="10" value="2960"></label>
+          <label for="inV0">Velocidad inicial (km/h)<input type="number" id="inV0" min="0" step="1" value="0"></label>
+          <label for="inT0">Salida<input type="time" id="inT0" value="21:30"></label>
+          <label for="inTf">Llegada<input type="time" id="inTf" value="22:00"></label>
+        </div>
+        <p id="labMsg" class="fb" aria-live="polite"></p>
+        <div class="row"><button id="restore">Volver al enunciado</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" style="display:grid;gap:14px">
+    <div><p class="eyebrow">¿Es realista?</p><h2>El ejercicio contra el auto de verdad</h2></div>
+    <div class="real" id="real"></div>
+  </section>
+
+  <footer>Recorrido calculado sobre calles reales con OpenStreetMap/OSRM: Manuela Pedraza → Aizpúrua → Cullen → Av. de los Constituyentes → Pedro Morán (≈ 2,96 km). En el modelo MRUV el trayecto se trata como una línea recta de esa longitud. Los datos del Mégane son aproximados.</footer>
+</div>
+
+<script>
+(()=>{
+// Recorrido real (lon, lat) — OSRM
+const ROUTE=[[-58.502477,-34.570554],[-58.501722,-34.570135],[-58.500955,-34.571099],[-58.500153,-34.572071],[-58.499266,-34.573182],[-58.498509,-34.574117],[-58.498118,-34.574588],[-58.497756,-34.575054],[-58.497162,-34.575805],[-58.496567,-34.576562],[-58.495957,-34.5773],[-58.497221,-34.577983],[-58.496895,-34.578242],[-58.496096,-34.578866],[-58.495198,-34.57957],[-58.493766,-34.580653],[-58.493607,-34.580767],[-58.493574,-34.580791],[-58.493453,-34.580876],[-58.493323,-34.580962],[-58.493282,-34.58099],[-58.492813,-34.581364],[-58.492539,-34.581583],[-58.492327,-34.581764],[-58.491763,-34.58225],[-58.491038,-34.582876],[-58.490796,-34.583084],[-58.490733,-34.583138],[-58.490429,-34.583398],[-58.490273,-34.583535],[-58.489832,-34.583913],[-58.489518,-34.584192],[-58.48904,-34.584596],[-58.488794,-34.584815],[-58.48856,-34.585056],[-58.488081,-34.585539],[-58.487541,-34.586111],[-58.487513,-34.58614],[-58.487448,-34.586209],[-58.487381,-34.58628],[-58.487354,-34.586309],[-58.486965,-34.586719],[-58.486899,-34.58679],[-58.486875,-34.586816],[-58.486805,-34.586889],[-58.486899,-34.586949],[-58.488374,-34.587864],[-58.489506,-34.588566],[-58.49034,-34.589086]];
+const STREETS=[
+  {name:"Aizpúrua",a:1,b:10,side:-1},
+  {name:"Cullen",a:10,b:11,side:1},
+  {name:"Av. de los Constituyentes",a:11,b:44,side:-1},
+  {name:"Pedro Morán",a:44,b:48,side:1}
+];
+const DEF={d:2960,v0:0,t0:"21:30",tf:"22:00"};
+const P={...DEF};
+let M={}; // magnitudes derivadas
+let t=0, playing=false, last=0;
+
+const $=id=>document.getElementById(id);
+const NS="http://www.w3.org/2000/svg";
+const el=(tag,attrs={},parent)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e};
+const fmt=(n,d=2)=>n.toLocaleString("es-AR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtSig=(n,s=3)=>{if(n===0)return"0";const d=Math.max(0,s-1-Math.floor(Math.log10(Math.abs(n))));return fmt(n,Math.min(d,8))};
+const toSec=h=>{const[a,b]=h.split(":").map(Number);return a*3600+b*60};
+const clockStr=s=>{s=((Math.round(s)%86400)+86400)%86400;const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return[h,m,x].map(v=>String(v).padStart(2,"0")).join(":")};
+
+function derive(){
+  let T=toSec(P.tf)-toSec(P.t0); if(T<=0)T+=86400;
+  const v0=P.v0/3.6, d=P.d;
+  const a=2*(d-v0*T)/(T*T);
+  const vf=v0+a*T;
+  M={T,v0,d,a,vf,vm:d/T};
+}
+const xAt=s=>M.v0*s+0.5*M.a*s*s;
+const vAt=s=>M.v0+M.a*s;
+
+/* ---------- Mapa ---------- */
+const map=$("map");
+let path, done, car, pathLen=1;
+function buildMap(){
+  const lat0=-34.58, k=Math.cos(lat0*Math.PI/180);
+  const pts=ROUTE.map(([lo,la])=>[(lo+58.5)*111320*k,-(la-lat0)*110574]);
+  const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]);
+  const pad=230, minX=Math.min(...xs)-pad-160, minY=Math.min(...ys)-pad, W=Math.max(...xs)-minX+pad+160, H=Math.max(...ys)-minY+pad;
+  map.setAttribute("viewBox",`${minX} ${minY} ${W} ${H}`);
+  // grilla de cuadras (~100 m)
+  const g=el("g",{stroke:"var(--line)","stroke-width":2},map);
+  for(let x=Math.ceil(minX/100)*100;x<minX+W;x+=100)el("line",{x1:x,y1:minY,x2:x,y2:minY+H},g);
+  for(let y=Math.ceil(minY/100)*100;y<minY+H;y+=100)el("line",{x1:minX,y1:y,x2:minX+W,y2:y},g);
+  const d="M"+pts.map(p=>p.map(v=>v.toFixed(1)).join(" ")).join(" L");
+  el("path",{d,fill:"none",stroke:"var(--road)","stroke-width":46,"stroke-linecap":"round","stroke-linejoin":"round"},map);
+  el("path",{d,fill:"none",stroke:"var(--lane)","stroke-width":4,"stroke-dasharray":"22 22","stroke-linejoin":"round"},map);
+  done=el("path",{d,fill:"none",stroke:"var(--red)","stroke-width":18,"stroke-linecap":"round","stroke-linejoin":"round",opacity:.85},map);
+  path=done; pathLen=done.getTotalLength();
+  // nombres de calles
+  STREETS.forEach(s=>{
+    const A=pts[s.a],B=pts[s.b];const mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2;
+    let ang=Math.atan2(B[1]-A[1],B[0]-A[0])*180/Math.PI; if(ang>90)ang-=180; if(ang<-90)ang+=180;
+    const len=Math.hypot(B[0]-A[0],B[1]-A[1]);
+    const nx=-(B[1]-A[1])/len, ny=(B[0]-A[0])/len, off=s.side*70;
+    const tx=el("text",{x:mx+nx*off,y:my+ny*off,"text-anchor":"middle","dominant-baseline":"middle",transform:`rotate(${ang.toFixed(1)} ${mx+nx*off} ${my+ny*off})`,fill:"var(--muted)","font-family":"Barlow Condensed, Arial Narrow, sans-serif","font-size":len<200?44:56,"font-weight":600},map);
+    tx.textContent=s.name;
+  });
+  // puntos A y B
+  const pin=(p,label,sub,dx,anchor)=>{
+    el("circle",{cx:p[0],cy:p[1],r:34,fill:"var(--surface)",stroke:"var(--ink)","stroke-width":8},map);
+    const t1=el("text",{x:p[0],y:p[1]+2,"text-anchor":"middle","dominant-baseline":"middle","font-family":"Barlow Condensed, sans-serif","font-weight":700,"font-size":44,fill:"var(--ink)"},map);t1.textContent=label;
+    const t2=el("text",{x:p[0]+dx,y:p[1]-6,"text-anchor":anchor,"font-family":"Barlow Condensed, sans-serif","font-weight":700,"font-size":54,fill:"var(--ink)"},map);t2.textContent=sub[0];
+    const t3=el("text",{x:p[0]+dx,y:p[1]+50,"text-anchor":anchor,"font-family":"Barlow, sans-serif","font-size":42,fill:"var(--muted)"},map);t3.textContent=sub[1];
+  };
+  pin(pts[0],"A",["Salida","M. Pedraza 6080"],60,"start");
+  pin(pts[pts.length-1],"B",["Garden Club","P. Morán 2379"],60,"start");
+  // brújula
+  const cx=minX+W-90, cy=minY+100;
+  el("path",{d:`M${cx} ${cy-50} L${cx+22} ${cy+20} L${cx} ${cy+8} L${cx-22} ${cy+20} Z`,fill:"var(--ink)"},map);
+  const n=el("text",{x:cx,y:cy+70,"text-anchor":"middle","font-family":"Barlow Condensed, sans-serif","font-weight":700,"font-size":44,fill:"var(--ink)"},map);n.textContent="N";
+  // escala 500 m
+  const sx=minX+60, sy=minY+H-60;
+  el("rect",{x:sx,y:sy-10,width:500,height:20,fill:"var(--ink)"},map);
+  el("rect",{x:sx+250,y:sy-6,width:246,height:12,fill:"var(--surface)"},map);
+  const sc=el("text",{x:sx,y:sy-26,"font-family":"JetBrains Mono, monospace","font-size":38,fill:"var(--muted)"},map);sc.textContent="500 m";
+  // auto visto desde arriba
+  car=el("g",{},map);
+  el("rect",{x:-48,y:-24,width:96,height:48,rx:18,fill:"var(--red)",stroke:"var(--surface)","stroke-width":6},car);
+  el("rect",{x:4,y:-17,width:22,height:34,rx:6,fill:"var(--surface)",opacity:.8},car);
+  el("rect",{x:-34,y:-15,width:16,height:30,rx:5,fill:"var(--surface)",opacity:.6},car);
+}
+
+/* ---------- Velocímetro (0–200 km/h, como el tablero real) ---------- */
+let needle;
+function buildGauge(){
+  const g=$("gauge"), cx=100, cy=100, r=82, A0=-225, A1=45, VMAX=200;
+  const ang=v=>(A0+(A1-A0)*v/VMAX)*Math.PI/180;
+  const arc=(v1,v2,rr)=>{const a=ang(v1),b=ang(v2);return`M${cx+rr*Math.cos(a)} ${cy+rr*Math.sin(a)} A${rr} ${rr} 0 ${(v2-v1)/VMAX*270>180?1:0} 1 ${cx+rr*Math.cos(b)} ${cy+rr*Math.sin(b)}`};
+  el("path",{d:arc(0,VMAX,r),fill:"none",stroke:"var(--line)","stroke-width":10,"stroke-linecap":"round"},g);
+  for(let v=0;v<=VMAX;v+=10){
+    const a=ang(v), big=v%40===0, r1=r-(big?18:11);
+    el("line",{x1:cx+r1*Math.cos(a),y1:cy+r1*Math.sin(a),x2:cx+(r-6)*Math.cos(a),y2:cy+(r-6)*Math.sin(a),stroke:"var(--ink)","stroke-width":big?2.5:1.2},g);
+    if(big){const tx=el("text",{x:cx+(r-32)*Math.cos(a),y:cy+(r-32)*Math.sin(a)+4,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","font-size":11,fill:"var(--muted)"},g);tx.textContent=v;}
+  }
+  const lbl=el("text",{x:cx,y:cy+38,"text-anchor":"middle","font-family":"Barlow Condensed, sans-serif","font-size":13,fill:"var(--muted)","letter-spacing":"1"},g);lbl.textContent="KM/H";
+  const vt=el("text",{id:"gV",x:cx,y:cy+62,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","font-weight":600,"font-size":22,fill:"var(--ink)"},g);vt.textContent="0,0";
+  needle=el("g",{},g);
+  el("line",{x1:cx,y1:cy,x2:cx+r-14,y2:cy,stroke:"var(--red)","stroke-width":3.5,"stroke-linecap":"round"},needle);
+  el("circle",{cx,cy,r:8,fill:"var(--red)"},g);
+  needle._ang=v=>(A0+(A1-A0)*Math.max(0,Math.min(VMAX,v))/VMAX);
+}
+
+/* ---------- Gráficos ---------- */
+function niceStep(range){const raw=range/4, p=Math.pow(10,Math.floor(Math.log10(raw))), f=raw/p;return(f<1.5?1:f<3?2:f<7?5:10)*p}
+const charts={};
+function buildChart(id,fn,unit,color){
+  const svg=$(id); svg.innerHTML="";
+  const L=52,R=12,T=14,B=34,W=320-L-R,H=200-T-B;
+  let lo=0,hi=0; for(let i=0;i<=60;i++){const y=fn(M.T*i/60);lo=Math.min(lo,y);hi=Math.max(hi,y)}
+  if(hi-lo<1e-12){hi=lo+1}
+  const st=niceStep(hi-lo); lo=Math.floor(lo/st-1e-9)*st; hi=Math.ceil(hi/st-1e-9)*st; if(hi===lo)hi=lo+st;
+  const sx=s=>L+W*s/M.T, sy=y=>T+H*(1-(y-lo)/(hi-lo));
+  const grid=el("g",{},svg);
+  const dec=Math.max(0,-Math.floor(Math.log10(st)));
+  for(let y=lo;y<=hi+st/2;y+=st){
+    el("line",{x1:L,x2:L+W,y1:sy(y),y2:sy(y),stroke:"var(--line)","stroke-width":1},grid);
+    const tx=el("text",{x:L-6,y:sy(y)+4,"text-anchor":"end","font-family":"JetBrains Mono, monospace","font-size":10,fill:"var(--muted)"},grid);tx.textContent=fmt(y,Math.min(dec,6));
+  }
+  const tmin=M.T/60, mst=niceStep(tmin)>=1?niceStep(tmin):tmin/4;
+  for(let m=0;m<=tmin+1e-9;m+=mst){
+    const x=sx(m*60);
+    el("line",{x1:x,x2:x,y1:T+H,y2:T+H+4,stroke:"var(--muted)"},grid);
+    const tx=el("text",{x,y:T+H+16,"text-anchor":"middle","font-family":"JetBrains Mono, monospace","font-size":10,fill:"var(--muted)"},grid);tx.textContent=fmt(m,mst<1?1:0);
+  }
+  const ax=el("text",{x:L+W,y:200-4,"text-anchor":"end","font-family":"Barlow, sans-serif","font-size":11,fill:"var(--muted)"},svg);ax.textContent="t (min)";
+  const ay=el("text",{x:4,y:T+2,"font-family":"Barlow, sans-serif","font-size":11,fill:"var(--muted)","dominant-baseline":"hanging"},svg);ay.textContent=unit;
+  el("line",{x1:L,x2:L+W,y1:sy(Math.max(lo,Math.min(hi,0))),y2:sy(Math.max(lo,Math.min(hi,0))),stroke:"var(--muted)","stroke-width":1},svg);
+  let d="",area=`M${sx(0)} ${sy(Math.max(lo,0))}`;
+  for(let i=0;i<=120;i++){const s=M.T*i/120;d+=(i?"L":"M")+sx(s).toFixed(1)+" "+sy(fn(s)).toFixed(1);area+=` L${sx(s).toFixed(1)} ${sy(fn(s)).toFixed(1)}`}
+  area+=` L${sx(M.T)} ${sy(Math.max(lo,0))} Z`;
+  el("path",{d:area,fill:color,opacity:.1},svg);
+  el("path",{d,fill:"none",stroke:color,"stroke-width":2.5},svg);
+  const cur=el("line",{y1:T,y2:T+H,stroke:"var(--ink)","stroke-width":1,"stroke-dasharray":"3 3"},svg);
+  const dot=el("circle",{r:5,fill:color,stroke:"var(--surface)","stroke-width":2},svg);
+  charts[id]={fn,sx,sy,cur,dot};
+}
+function buildCharts(){
+  buildChart("cX",xAt,"x (m)","var(--red)");
+  buildChart("cV",s=>vAt(s)*3.6,"v (km/h)","var(--red)");
+  buildChart("cA",()=>M.a,"a (m/s²)","var(--lane)");
+}
+
+/* ---------- Render del instante t ---------- */
+function render(){
+  const x=xAt(t), v=vAt(t), frac=Math.max(0,Math.min(1,x/M.d));
+  const L=pathLen*frac;
+  done.setAttribute("stroke-dasharray",`${L} ${pathLen+10}`);
+  const p=path.getPointAtLength(L), q=path.getPointAtLength(Math.min(pathLen,L+4)), q0=path.getPointAtLength(Math.max(0,L-4));
+  const ang=Math.atan2(q.y-q0.y,q.x-q0.x)*180/Math.PI;
+  car.setAttribute("transform",`translate(${p.x} ${p.y}) rotate(${ang})`);
+  $("clock").textContent=clockStr(toSec(P.t0)+t);
+  $("progress").textContent=`${fmt(frac*100,1)} % del recorrido`;
+  $("rT").textContent=`${fmt(t,0)} s`; $("rTmin").textContent=`${fmt(t/60,1)} min`;
+  $("rX").textContent=`${fmt(x,1)} m`; $("rXrest").textContent=`faltan ${fmt(Math.max(0,M.d-x),0)} m`;
+  $("rV").textContent=`${fmt(v,2)} m/s`; $("rVkmh").textContent=`${fmt(v*3.6,1)} km/h`;
+  $("gV").textContent=fmt(v*3.6,1);
+  needle.setAttribute("transform",`rotate(${needle._ang(v*3.6)} 100 100)`);
+  for(const id in charts){const c=charts[id], y=c.fn(t);c.cur.setAttribute("x1",c.sx(t));c.cur.setAttribute("x2",c.sx(t));c.dot.setAttribute("cx",c.sx(t));c.dot.setAttribute("cy",c.sy(y))}
+  $("scrub").value=Math.round(t/M.T*1000);
+}
+
+/* ---------- Resolución y textos ---------- */
+function writeSolution(){
+  const {T,v0,d,a,vf,vm}=M, v0k=P.v0, mins=T/60;
+  $("fHorario").textContent=`${P.t0} → ${P.tf}`;
+  $("fDist").textContent=`${fmt(d,0)} m`;
+  $("fV0").textContent=v0k?`${fmt(v0k,0)} km/h`:"0 km/h (reposo)";
+  $("rA").textContent=`${fmtSig(a,3)} m/s²`;
+  const v0txt=v0k?`${fmt(v0k,0)} km/h ÷ 3,6 = ${fmtSig(v0,3)} m/s`:"0 m/s (parte del reposo)";
+  $("steps").innerHTML=`
+  <li><div><h3>Ordeno los datos</h3>
+    <p class="muted">Pongo el origen del eje en Manuela Pedraza 6080 y paso todo a unidades del SI.</p>
+    <div class="eq">x₀ = 0 m &nbsp;·&nbsp; x = ${fmt(d,0)} m &nbsp;·&nbsp; v₀ = ${v0txt}</div>
+    <div class="eq">Δt = ${P.tf} − ${P.t0} = ${fmt(mins,mins%1?1:0)} min = <b>${fmt(T,0)} s</b></div></div></li>
+  <li><div><h3>Elijo la ecuación horaria</h3>
+    <p class="muted">Conozco distancia, tiempo y velocidad inicial. La incógnita es la aceleración.</p>
+    <div class="eq">x = x₀ + v₀·t + ½·a·t²</div>
+    <div class="eq">a = 2·(x − x₀ − v₀·t) / t²</div></div></li>
+  <li><div><h3>Calculo la aceleración</h3>
+    <div class="eq">a = 2·(${fmt(d,0)} − ${fmtSig(v0,3)}·${fmt(T,0)}) / ${fmt(T,0)}²</div>
+    <div class="eq">a = ${fmt(2*(d-v0*T),0)} / ${fmt(T*T,0)} = <b>${fmtSig(a,3)} m/s²</b></div></div></li>
+  <li><div><h3>Calculo la velocidad de llegada</h3>
+    <div class="eq">v = v₀ + a·t = ${fmtSig(v0,3)} + ${fmtSig(a,3)}·${fmt(T,0)}</div>
+    <div class="eq">v = <b>${fmt(vf,2)} m/s</b> = ${fmt(vf,2)} × 3,6 = <b>${fmt(vf*3.6,1)} km/h</b></div></div></li>
+  <li><div><h3>Verifico con la ecuación sin tiempo</h3>
+    <div class="eq">v² = v₀² + 2·a·Δx → ${fmt(vf*vf,2)} = ${fmt(v0*v0,2)} + 2·${fmtSig(a,3)}·${fmt(d,0)} = ${fmt(v0*v0+2*a*d,2)} ✓</div></div></li>
+  <li><div><h3>Velocidad media</h3>
+    <div class="eq">v̄ = Δx / Δt = ${fmt(d,0)} / ${fmt(T,0)} = ${fmt(vm,2)} m/s = ${fmt(vm*3.6,1)} km/h</div>
+    <p class="muted" style="margin-top:6px">En MRUV coincide con el promedio (v₀ + v)/2 = ${fmt((v0+vf)/2,2)} m/s.</p></div></li>`;
+  const half=T/2;
+  $("result").innerHTML=`<span class="eyebrow">Resultado</span>
+    <p><b>a ≈ ${fmtSig(a,3)} m/s²</b> &nbsp;·&nbsp; <b>v final ≈ ${fmt(vf*3.6,1)} km/h</b> &nbsp;·&nbsp; v media ≈ ${fmt(vm*3.6,1)} km/h</p>
+    <p class="muted">A mitad de tiempo (${clockStr(toSec(P.t0)+half).slice(0,5)}) lleva ${fmt(xAt(half),0)} m, ${fmt(xAt(half)/d*100,0)} % del camino: como va acelerando, recorre mucho más en la segunda mitad.</p>
+    ${vf<0?`<p class="warn">Con estos datos la velocidad final da negativa: el auto tendría que frenar, detenerse y volver. Bajá la velocidad inicial o dale más tiempo.</p>`:""}`;
+  $("q3label").textContent=`3. ¿Cuántos metros recorrió a las ${clockStr(toSec(P.t0)+half).slice(0,5)}? (m)`;
+  ["1","2","3"].forEach(n=>{$("fb"+n).textContent="";$("fb"+n).className="fb"});
+  // comparación con el auto real (Mégane 1.6 2000: 0–100 km/h en ~11 s)
+  const aReal=(100/3.6)/11;
+  const ratio=a>0?aReal/a:null;
+  $("real").innerHTML=`
+    <div><h3>Aceleración</h3><p>Un Mégane 1.6 del 2000 va de 0 a 100 km/h en unos 11 s: a ≈ ${fmt(aReal,2)} m/s². ${ratio?`El ejercicio usa una aceleración unas <b>${fmt(ratio,0)} veces</b> más chica.`:"En el ejercicio la aceleración es negativa o nula."}</p></div>
+    <div><h3>Velocidad</h3><p>Llegar a ${fmt(vf*3.6,1)} km/h es ${vf*3.6<20?"ir al ritmo de una bicicleta tranquila":vf*3.6<60?"una velocidad normal de calle":"más de lo permitido en calles de la ciudad (40–60 km/h)"}. La aguja del velocímetro ${vf*3.6<20?"casi no se mueve":"se mueve bastante"}.</p></div>
+    <div><h3>Tiempo</h3><p>Con tránsito normal el GPS estima unos 6 minutos para este recorrido. En la vida real el auto acelera, va un rato a velocidad pareja y frena en cada esquina: eso combina MRUV y MRU.</p></div>`;
+}
+
+function check(n){
+  const s=$("q"+n).value.trim();
+  const raw=s.includes(",")?s.replace(/\./g,"").replace(",","."):s;
+  const val=parseFloat(raw), fb=$("fb"+n);
+  const half=M.T/2;
+  const ans=n==1?M.a:n==2?M.vf*3.6:xAt(half);
+  const unit=n==1?"m/s²":n==2?"km/h":"m";
+  if(isNaN(val)){fb.className="fb bad";fb.textContent="Escribí un número para comprobar.";return}
+  const ok=Math.abs(val-ans)<=Math.abs(ans)*0.02+1e-9;
+  fb.className="fb "+(ok?"ok":"bad");
+  if(ok)fb.textContent=`Correcto: ${n==1?fmtSig(ans,3):fmt(ans,n==2?1:0)} ${unit}.`;
+  else{
+    const hint=n==1?"Usá a = 2·(x − v₀·t)/t² con t en segundos.":n==2?"Calculá v = v₀ + a·t en m/s y multiplicá por 3,6.":"Usá x = v₀·t + ½·a·t² con t = "+fmt(half,0)+" s.";
+    fb.textContent=(val>ans?"Te pasaste. ":"Te quedaste corto. ")+hint;
+  }
+}
+
+/* ---------- Animación ---------- */
+const playBtn=$("play");
+function setPlaying(p){playing=p;playBtn.textContent=p?"❚❚ Pausa":(t>=M.T?"↻ De nuevo":"▶ "+(t>0?"Seguir":"Arrancar"));if(p){last=performance.now();requestAnimationFrame(loop)}}
+function loop(now){
+  if(!playing)return;
+  const dt=(now-last)/1000; last=now;
+  t=Math.min(M.T,t+dt*Number($("speed").value)*(M.T/1800));
+  render();
+  if(t>=M.T){setPlaying(false);return}
+  requestAnimationFrame(loop);
+}
+playBtn.addEventListener("click",()=>{if(!playing&&t>=M.T)t=0;setPlaying(!playing)});
+$("reset").addEventListener("click",()=>{t=0;render();setPlaying(false)});
+$("scrub").addEventListener("input",e=>{t=M.T*e.target.value/1000;render();if(playing)setPlaying(false);else playBtn.textContent=t>=M.T?"↻ De nuevo":"▶ "+(t>0?"Seguir":"Arrancar")});
+document.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click",()=>check(+b.dataset.q)));
+["q1","q2","q3"].forEach((id,i)=>$(id).addEventListener("keydown",e=>{if(e.key==="Enter")check(i+1)}));
+
+/* ---------- Laboratorio ---------- */
+function applyLab(){
+  const d=parseFloat($("inD").value), v0=parseFloat($("inV0").value), t0=$("inT0").value, tf=$("inTf").value, msg=$("labMsg");
+  if(!(d>0)||!(v0>=0)||!t0||!tf){msg.className="fb bad";msg.textContent="Revisá los datos: la distancia tiene que ser mayor que 0 y la velocidad inicial no puede ser negativa.";return}
+  if(t0===tf){msg.className="fb bad";msg.textContent="La salida y la llegada no pueden ser a la misma hora.";return}
+  Object.assign(P,{d,v0,t0,tf});
+  msg.className="fb";msg.textContent=(d===DEF.d&&v0===DEF.v0&&t0===DEF.t0&&tf===DEF.tf)?"":"Estás viendo una variante del enunciado.";
+  setPlaying(false); t=0; recompute();
+}
+["inD","inV0","inT0","inTf"].forEach(id=>$(id).addEventListener("change",applyLab));
+$("restore").addEventListener("click",()=>{$("inD").value=DEF.d;$("inV0").value=DEF.v0;$("inT0").value=DEF.t0;$("inTf").value=DEF.tf;applyLab()});
+
+function recompute(){derive();buildCharts();writeSolution();render();setPlaying(false)}
+
+buildMap(); buildGauge(); recompute();
+})();
+</script>
+
+</body>
+</html>
