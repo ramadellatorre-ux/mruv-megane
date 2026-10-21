@@ -47,7 +47,7 @@ p{margin:0}
 header{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end}
 header .lead{max-width:60ch;margin-top:10px;color:var(--muted)}
 .car-side{width:220px;max-width:40vw}
-@media (max-width:640px){header{grid-template-columns:1fr}.car-side{display:none}}
+@media (max-width:640px){header{grid-template-columns:1fr;gap:12px}.car-side{order:-1;width:min(240px,65%);max-width:none;justify-self:start}}
 
 /* Ficha del enunciado */
 .ficha{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -115,6 +115,27 @@ ol.steps li::before{content:counter(s);font-family:var(--display);font-weight:70
 .real div{border-left:3px solid var(--lane);padding-left:12px}
 footer{font-size:.85rem;color:var(--muted)}
 footer a{color:inherit}
+/* Cuestionario */
+.qhead{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:end}
+@media (max-width:520px){.qhead{grid-template-columns:1fr}}
+.score{display:grid;gap:4px;min-width:130px}
+.score b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1.6rem;line-height:1}
+.score span{font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+ol.qlist{list-style:none;margin:0;padding:0;display:grid;counter-reset:q}
+ol.qlist>li{counter-increment:q;display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;padding-block:16px;border-top:1px solid var(--line)}
+ol.qlist>li::before{content:counter(q);font-family:var(--display);font-weight:700;font-size:1.1rem;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--red);color:var(--red)}
+ol.qlist>li.ok::before{content:"✓";background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.qa{display:grid;gap:8px;min-width:0}
+.qa label{font-weight:600;line-height:1.35}
+.qa .row input{width:9rem}
+.unit{font-family:var(--mono);color:var(--muted);font-size:.9rem}
+button.ghost{background:transparent}
+.ans{border-left:3px solid var(--red);background:var(--red-soft);padding:10px 12px;border-radius:0 8px 8px 0;display:grid;gap:6px;min-width:0}
+.ans .final{font-weight:600}
+.ans .eq{margin-top:0}
+
 /* Táctil y celular */
 button{min-height:44px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 select,input{font-size:16px}
@@ -143,7 +164,9 @@ button.snd[aria-pressed="true"]{border-color:var(--red);color:var(--red)}
   ol.steps li{grid-template-columns:28px minmax(0,1fr);gap:10px}
   ol.steps li::before{width:28px;height:28px;font-size:1rem}
   .eq{font-size:.85rem;white-space:normal;overflow-wrap:anywhere}
-  .q .row input{flex:1;width:auto}
+  .qa .row input{flex:1 1 7rem;width:auto}
+  ol.qlist>li{grid-template-columns:28px minmax(0,1fr);gap:10px}
+  ol.qlist>li::before{width:28px;height:28px;font-size:1rem}
 }
 @media (max-width:420px){
   .clock{font-size:2rem}
@@ -231,33 +254,17 @@ button.snd[aria-pressed="true"]{border-color:var(--red);color:var(--red)}
   </section>
 
   <section class="two">
-    <div class="panel" style="display:grid;gap:16px">
-      <div><p class="eyebrow">Resolución</p><h2>Paso a paso</h2></div>
-      <ol class="steps" id="steps"></ol>
-      <div class="result" id="result"></div>
+    <div class="panel" style="display:grid;gap:14px;min-width:0">
+      <div class="qhead">
+        <div><p class="eyebrow">Cuestionario</p><h2>Preguntas con respuesta</h2>
+          <p class="muted" style="margin-top:6px">Respondé y tocá «Comprobar». Si te trabás, abrí la respuesta: trae el desarrollo completo. Podés usar coma o punto decimal; se acepta un margen de 2 %.</p></div>
+        <div class="score" aria-live="polite"><b id="score">0 / 8</b><span>respuestas correctas</span><div class="bar"><i id="scoreBar"></i></div></div>
+      </div>
+      <div class="row"><button id="showAll" aria-pressed="false">Mostrar todas las respuestas</button><button id="resetQuiz" class="ghost">Reiniciar cuestionario</button></div>
+      <ol class="qlist" id="qlist"></ol>
     </div>
 
     <div style="display:grid;gap:20px;min-width:0">
-      <div class="panel quiz">
-        <div><p class="eyebrow">Probá vos</p><h2>Antes de mirar</h2>
-          <p class="muted" style="margin-top:6px">Podés usar coma o punto decimal. Se acepta un margen de 2 %.</p></div>
-        <div class="q">
-          <label for="q1">1. ¿Cuál es la aceleración del Mégane? (m/s²)</label>
-          <div class="row"><input type="text" inputmode="decimal" id="q1" placeholder="0,00…"><button data-q="1">Comprobar</button></div>
-          <p class="fb" id="fb1" aria-live="polite"></p>
-        </div>
-        <div class="q">
-          <label for="q2">2. ¿A qué velocidad llega al Garden Club? (km/h)</label>
-          <div class="row"><input type="text" inputmode="decimal" id="q2"><button data-q="2">Comprobar</button></div>
-          <p class="fb" id="fb2" aria-live="polite"></p>
-        </div>
-        <div class="q">
-          <label for="q3" id="q3label">3. ¿Cuántos metros recorrió a las 21:45? (m)</label>
-          <div class="row"><input type="text" inputmode="decimal" id="q3"><button data-q="3">Comprobar</button></div>
-          <p class="fb" id="fb3" aria-live="polite"></p>
-        </div>
-      </div>
-
       <div class="panel" style="display:grid;gap:14px">
         <div><p class="eyebrow">Laboratorio</p><h2>Cambiá los datos</h2>
           <p class="muted" style="margin-top:6px">Todo se recalcula: mapa, tablero, gráficos y resolución.</p></div>
@@ -457,65 +464,95 @@ function render(){
   $("mRead").textContent=`${clockStr(toSec(P.t0)+t)} · ${fmt(v*3.6,1)} km/h`;
 }
 
-/* ---------- Resolución y textos ---------- */
+/* ---------- Cuestionario y textos ---------- */
+const A_REAL=(100/3.6)/11; // Mégane 1.6 del 2000: 0–100 km/h en ~11 s
+let QS=[]; const solved=new Set();
+const fmtAns=x=>x.sig?fmtSig(x.ans,x.sig):fmt(x.ans,x.dec);
+function buildQuestions(){
+  const {T,v0,d,a,vf,vm}=M, mins=T/60, half=T/2, hh=clockStr(toSec(P.t0)+half).slice(0,5);
+  const v0s=fmtSig(v0,3), mm=fmt(mins,mins%1?1:0);
+  const tHalf=Math.abs(a)<1e-12?(d/2)/v0:(-v0+Math.sqrt(v0*v0+a*d))/a;
+  QS=[
+    {q:"¿Cuánto dura el viaje, en segundos?",unit:"s",ans:T,dec:0,
+     work:[`Δt = ${P.tf} − ${P.t0} = ${mm} min`,`Δt = ${mm} × 60 = <b>${fmt(T,0)} s</b>`],
+     hint:"Restá las horas y pasá los minutos a segundos (× 60)."},
+    {q:"¿Qué aceleración tiene el Mégane?",unit:"m/s²",ans:a,sig:3,
+     work:["Ecuación horaria: x = x₀ + v₀·t + ½·a·t², con x₀ = 0","Despejo: a = 2·(x − v₀·t) / t²",`a = 2·(${fmt(d,0)} − ${v0s}·${fmt(T,0)}) / ${fmt(T,0)}²`,`a = ${fmt(2*(d-v0*T),0)} / ${fmt(T*T,0)} = <b>${fmtSig(a,3)} m/s²</b>`],
+     hint:"Usá x = v₀·t + ½·a·t² y despejá a. El tiempo va en segundos."},
+    {q:"¿Con qué velocidad llega al Garden Club?",unit:"km/h",ans:vf*3.6,dec:1,
+     work:[`v = v₀ + a·t = ${v0s} + ${fmtSig(a,3)}·${fmt(T,0)} = ${fmt(vf,2)} m/s`,`${fmt(vf,2)} m/s × 3,6 = <b>${fmt(vf*3.6,1)} km/h</b>`,`Verificación: v² = v₀² + 2·a·Δx → ${fmt(vf*vf,2)} = ${fmt(v0*v0+2*a*d,2)} ✓`],
+     hint:"Calculá v = v₀ + a·t en m/s y pasalo a km/h multiplicando por 3,6."},
+    {q:"¿Cuál es la velocidad media del viaje?",unit:"km/h",ans:vm*3.6,dec:1,
+     work:[`v̄ = Δx / Δt = ${fmt(d,0)} / ${fmt(T,0)} = ${fmt(vm,2)} m/s`,`${fmt(vm,2)} × 3,6 = <b>${fmt(vm*3.6,1)} km/h</b>`,`En MRUV también vale v̄ = (v₀ + v) / 2 = ${fmt((v0+vf)/2,2)} m/s`],
+     hint:"Distancia total dividida por tiempo total."},
+    {q:`¿Cuántos metros recorrió a las ${hh}?`,unit:"m",ans:xAt(half),dec:0,
+     work:[`Pasaron t = ${fmt(half,0)} s desde la salida`,`x = v₀·t + ½·a·t² = ${v0s}·${fmt(half,0)} + ½·${fmtSig(a,3)}·${fmt(half,0)}²`,`x = <b>${fmt(xAt(half),0)} m</b>: el ${fmt(xAt(half)/d*100,0)} % del camino en la mitad del tiempo`],
+     hint:`Calculá cuántos segundos pasaron desde las ${P.t0} y usá x = v₀·t + ½·a·t².`},
+    {q:`¿Qué velocidad marca el velocímetro a las ${hh}?`,unit:"km/h",ans:vAt(half)*3.6,dec:1,
+     work:[`v = v₀ + a·t = ${v0s} + ${fmtSig(a,3)}·${fmt(half,0)} = ${fmt(vAt(half),2)} m/s`,`${fmt(vAt(half),2)} × 3,6 = <b>${fmt(vAt(half)*3.6,1)} km/h</b>`],
+     hint:"La misma fórmula de velocidad, con el tiempo de la mitad del viaje."},
+    {q:`¿Cuántos minutos después de salir pasa por la mitad del recorrido (${fmt(d/2,0)} m)?`,unit:"min",ans:tHalf/60,dec:1,
+     work:[`${fmt(d/2,0)} = v₀·t + ½·a·t²`,v0>0?"Resuelvo la cuadrática: t = (−v₀ + √(v₀² + a·Δx)) / a":`Como v₀ = 0: t = √(2·x / a) = √(2·${fmt(d/2,0)} / ${fmtSig(a,3)})`,`t = ${fmt(tHalf,0)} s = <b>${fmt(tHalf/60,1)} min</b>: pasa a las ${clockStr(toSec(P.t0)+tHalf)}`],
+     hint:"Planteá x = v₀·t + ½·a·t² con x igual a la mitad de la distancia y despejá t."},
+    {q:"Un Mégane real va de 0 a 100 km/h en unos 11 s. ¿Cuántas veces más grande es esa aceleración que la del ejercicio?",unit:"veces",ans:a>0?A_REAL/a:NaN,dec:0,
+     work:[`a real = (100 ÷ 3,6) / 11 = ${fmt(A_REAL,2)} m/s²`,`${fmt(A_REAL,2)} / ${fmtSig(a,3)} = <b>${fmt(A_REAL/a,0)} veces</b>`],
+     hint:"Pasá 100 km/h a m/s, dividí por 11 s y compará con la aceleración del ejercicio."}
+  ].filter(x=>isFinite(x.ans));
+}
+function renderQuiz(){
+  solved.clear();
+  $("qlist").innerHTML=QS.map((x,i)=>`<li id="qi${i}"><div class="qa">
+    <label for="qa${i}">${x.q}</label>
+    <div class="row"><input type="text" inputmode="decimal" autocomplete="off" id="qa${i}"><span class="unit">${x.unit}</span><button data-c="${i}">Comprobar</button><button class="ghost" data-r="${i}" aria-expanded="false" aria-controls="qr${i}">Ver respuesta</button></div>
+    <p class="fb" id="qf${i}" aria-live="polite"></p>
+    <div class="ans" id="qr${i}" hidden><p class="final">Respuesta: ${fmtAns(x)} ${x.unit}</p>${x.work.map(w=>`<div class="eq">${w}</div>`).join("")}</div>
+  </div></li>`).join("");
+  $("showAll").setAttribute("aria-pressed","false"); $("showAll").textContent="Mostrar todas las respuestas";
+  updateScore();
+}
+function updateScore(){
+  $("score").textContent=`${solved.size} / ${QS.length}`;
+  $("scoreBar").style.width=`${QS.length?solved.size/QS.length*100:0}%`;
+}
+function reveal(i,show){
+  const box=$("qr"+i), btn=document.querySelector(`[data-r="${i}"]`);
+  box.hidden=!show; btn.setAttribute("aria-expanded",show); btn.textContent=show?"Ocultar respuesta":"Ver respuesta";
+}
+function check(i){
+  const x=QS[i], s=$("qa"+i).value.trim(), fb=$("qf"+i);
+  const val=parseFloat(s.includes(",")?s.replace(/\./g,"").replace(",","."):s);
+  if(isNaN(val)){fb.className="fb bad";fb.textContent="Escribí un número para comprobar.";return}
+  const ok=Math.abs(val-x.ans)<=Math.abs(x.ans)*0.02+1e-9;
+  fb.className="fb "+(ok?"ok":"bad");
+  if(ok){fb.textContent=`¡Correcto! ${fmtAns(x)} ${x.unit}.`;solved.add(i);$("qi"+i).classList.add("ok")}
+  else fb.textContent=(val>x.ans?"Te pasaste. ":"Te quedaste corto. ")+x.hint;
+  updateScore();
+}
+$("qlist").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  if(b.dataset.c!==undefined)check(+b.dataset.c);
+  if(b.dataset.r!==undefined)reveal(+b.dataset.r,$("qr"+b.dataset.r).hidden);
+});
+$("qlist").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id.startsWith("qa"))check(+e.target.id.slice(2))});
+$("showAll").addEventListener("click",e=>{
+  const on=e.currentTarget.getAttribute("aria-pressed")!=="true";
+  e.currentTarget.setAttribute("aria-pressed",on); e.currentTarget.textContent=on?"Ocultar todas las respuestas":"Mostrar todas las respuestas";
+  QS.forEach((_,i)=>reveal(i,on));
+});
+$("resetQuiz").addEventListener("click",renderQuiz);
+
 function writeSolution(){
-  const {T,v0,d,a,vf,vm}=M, v0k=P.v0, mins=T/60;
+  const {a,vf}=M;
   $("fHorario").textContent=`${P.t0} → ${P.tf}`;
-  $("fDist").textContent=`${fmt(d,0)} m`;
-  $("fV0").textContent=v0k?`${fmt(v0k,0)} km/h`:"0 km/h (reposo)";
+  $("fDist").textContent=`${fmt(M.d,0)} m`;
+  $("fV0").textContent=P.v0?`${fmt(P.v0,0)} km/h`:"0 km/h (reposo)";
   $("rA").textContent=`${fmtSig(a,3)} m/s²`;
-  const v0txt=v0k?`${fmt(v0k,0)} km/h ÷ 3,6 = ${fmtSig(v0,3)} m/s`:"0 m/s (parte del reposo)";
-  $("steps").innerHTML=`
-  <li><div><h3>Ordeno los datos</h3>
-    <p class="muted">Pongo el origen del eje en Manuela Pedraza 6080 y paso todo a unidades del SI.</p>
-    <div class="eq">x₀ = 0 m &nbsp;·&nbsp; x = ${fmt(d,0)} m &nbsp;·&nbsp; v₀ = ${v0txt}</div>
-    <div class="eq">Δt = ${P.tf} − ${P.t0} = ${fmt(mins,mins%1?1:0)} min = <b>${fmt(T,0)} s</b></div></div></li>
-  <li><div><h3>Elijo la ecuación horaria</h3>
-    <p class="muted">Conozco distancia, tiempo y velocidad inicial. La incógnita es la aceleración.</p>
-    <div class="eq">x = x₀ + v₀·t + ½·a·t²</div>
-    <div class="eq">a = 2·(x − x₀ − v₀·t) / t²</div></div></li>
-  <li><div><h3>Calculo la aceleración</h3>
-    <div class="eq">a = 2·(${fmt(d,0)} − ${fmtSig(v0,3)}·${fmt(T,0)}) / ${fmt(T,0)}²</div>
-    <div class="eq">a = ${fmt(2*(d-v0*T),0)} / ${fmt(T*T,0)} = <b>${fmtSig(a,3)} m/s²</b></div></div></li>
-  <li><div><h3>Calculo la velocidad de llegada</h3>
-    <div class="eq">v = v₀ + a·t = ${fmtSig(v0,3)} + ${fmtSig(a,3)}·${fmt(T,0)}</div>
-    <div class="eq">v = <b>${fmt(vf,2)} m/s</b> = ${fmt(vf,2)} × 3,6 = <b>${fmt(vf*3.6,1)} km/h</b></div></div></li>
-  <li><div><h3>Verifico con la ecuación sin tiempo</h3>
-    <div class="eq">v² = v₀² + 2·a·Δx → ${fmt(vf*vf,2)} = ${fmt(v0*v0,2)} + 2·${fmtSig(a,3)}·${fmt(d,0)} = ${fmt(v0*v0+2*a*d,2)} ✓</div></div></li>
-  <li><div><h3>Velocidad media</h3>
-    <div class="eq">v̄ = Δx / Δt = ${fmt(d,0)} / ${fmt(T,0)} = ${fmt(vm,2)} m/s = ${fmt(vm*3.6,1)} km/h</div>
-    <p class="muted" style="margin-top:6px">En MRUV coincide con el promedio (v₀ + v)/2 = ${fmt((v0+vf)/2,2)} m/s.</p></div></li>`;
-  const half=T/2;
-  $("result").innerHTML=`<span class="eyebrow">Resultado</span>
-    <p><b>a ≈ ${fmtSig(a,3)} m/s²</b> &nbsp;·&nbsp; <b>v final ≈ ${fmt(vf*3.6,1)} km/h</b> &nbsp;·&nbsp; v media ≈ ${fmt(vm*3.6,1)} km/h</p>
-    <p class="muted">A mitad de tiempo (${clockStr(toSec(P.t0)+half).slice(0,5)}) lleva ${fmt(xAt(half),0)} m, ${fmt(xAt(half)/d*100,0)} % del camino: como va acelerando, recorre mucho más en la segunda mitad.</p>
-    ${vf<0?`<p class="warn">Con estos datos la velocidad final da negativa: el auto tendría que frenar, detenerse y volver. Bajá la velocidad inicial o dale más tiempo.</p>`:""}`;
-  $("q3label").textContent=`3. ¿Cuántos metros recorrió a las ${clockStr(toSec(P.t0)+half).slice(0,5)}? (m)`;
-  ["1","2","3"].forEach(n=>{$("fb"+n).textContent="";$("fb"+n).className="fb"});
-  // comparación con el auto real (Mégane 1.6 2000: 0–100 km/h en ~11 s)
-  const aReal=(100/3.6)/11;
-  const ratio=a>0?aReal/a:null;
-  $("real").innerHTML=`
-    <div><h3>Aceleración</h3><p>Un Mégane 1.6 del 2000 va de 0 a 100 km/h en unos 11 s: a ≈ ${fmt(aReal,2)} m/s². ${ratio?`El ejercicio usa una aceleración unas <b>${fmt(ratio,0)} veces</b> más chica.`:"En el ejercicio la aceleración es negativa o nula."}</p></div>
+  buildQuestions(); renderQuiz();
+  const warn=vf<0?`<div><h3>Atención</h3><p class="warn">Con estos datos la velocidad final da negativa: el auto tendría que frenar, detenerse y volver. Bajá la velocidad inicial o dale más tiempo.</p></div>`:"";
+  $("real").innerHTML=warn+`
+    <div><h3>Aceleración</h3><p>Un Mégane 1.6 del 2000 va de 0 a 100 km/h en unos 11 s: a ≈ ${fmt(A_REAL,2)} m/s². ${a>0?`El ejercicio usa una aceleración unas <b>${fmt(A_REAL/a,0)} veces</b> más chica.`:"En esta variante la aceleración es negativa o nula."}</p></div>
     <div><h3>Velocidad</h3><p>Llegar a ${fmt(vf*3.6,1)} km/h es ${vf*3.6<20?"ir al ritmo de una bicicleta tranquila":vf*3.6<60?"una velocidad normal de calle":"más de lo permitido en calles de la ciudad (40–60 km/h)"}. La aguja del velocímetro ${vf*3.6<20?"casi no se mueve":"se mueve bastante"}.</p></div>
     <div><h3>Tiempo</h3><p>Con tránsito normal el GPS estima unos 6 minutos para este recorrido. En la vida real el auto acelera, va un rato a velocidad pareja y frena en cada esquina: eso combina MRUV y MRU.</p></div>`;
-}
-
-function check(n){
-  const s=$("q"+n).value.trim();
-  const raw=s.includes(",")?s.replace(/\./g,"").replace(",","."):s;
-  const val=parseFloat(raw), fb=$("fb"+n);
-  const half=M.T/2;
-  const ans=n==1?M.a:n==2?M.vf*3.6:xAt(half);
-  const unit=n==1?"m/s²":n==2?"km/h":"m";
-  if(isNaN(val)){fb.className="fb bad";fb.textContent="Escribí un número para comprobar.";return}
-  const ok=Math.abs(val-ans)<=Math.abs(ans)*0.02+1e-9;
-  fb.className="fb "+(ok?"ok":"bad");
-  if(ok)fb.textContent=`Correcto: ${n==1?fmtSig(ans,3):fmt(ans,n==2?1:0)} ${unit}.`;
-  else{
-    const hint=n==1?"Usá a = 2·(x − v₀·t)/t² con t en segundos.":n==2?"Calculá v = v₀ + a·t en m/s y multiplicá por 3,6.":"Usá x = v₀·t + ½·a·t² con t = "+fmt(half,0)+" s.";
-    fb.textContent=(val>ans?"Te pasaste. ":"Te quedaste corto. ")+hint;
-  }
 }
 
 /* ---------- Motor (Web Audio, 4 cilindros sintetizado) ---------- */
@@ -626,8 +663,6 @@ sndBtns.forEach(b=>b.addEventListener("click",()=>{
   if(!Engine.on)Engine.stop(true); else if(playing)Engine.start();
 }));
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&playing)setPlaying(false)});
-document.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click",()=>check(+b.dataset.q)));
-["q1","q2","q3"].forEach((id,i)=>$(id).addEventListener("keydown",e=>{if(e.key==="Enter")check(i+1)}));
 
 /* ---------- Laboratorio ---------- */
 function applyLab(){
